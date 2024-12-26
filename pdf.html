@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block start %}
+<div class="container mt-5 p-4 col-md-8">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="text-center">Recipe Plan Generator</h2>
+            <table class="table mt-4">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Day-Time</th>
+                        <th>Recipe Name</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for recipe in recipes %}
+                    <tr id="recipe-{{ recipe.id }}">
+                        <td>{{ recipe.day }}</td>
+                        <td>{{ recipe.name }}</td>
+                        <td>{{ recipe.description }}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="generatePDF('{{ recipe.id }}')">Generate PDF</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    function generatePDF(recipeId) {
+        var element = document.getElementById('recipe-' + recipeId);
+        var opt = {
+            margin: 1,
+            filename: 'Recipe_' + recipeId + '.pdf',
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        // Clone the element to manipulate it without affecting the original
+        var clone = element.cloneNode(true);
+        
+        // Remove the "Actions" column from the cloned element
+        var actionsColumn = clone.querySelector('td:last-child');
+        if (actionsColumn) {
+            actionsColumn.parentNode.removeChild(actionsColumn);
+        }
+
+        // Add custom styles to the clone for the PDF
+        var style = document.createElement('style');
+        style.innerHTML = `
+            .pdf-content {
+                font-family: Arial, sans-serif;
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .pdf-content th, .pdf-content td {
+                border: 1px solid #ddd;
+                padding: 8px;
+            }
+            .pdf-content th {
+                padding-top: 12px;
+                padding-bottom: 12px;
+                text-align: left;
+                background-color: #f2f2f2;
+                color: black;
+            }
+            .pdf-header {
+                text-align: center;
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+        `;
+        clone.prepend(style);
+
+        // Wrap the content in a div for styling
+        var wrapper = document.createElement('div');
+        wrapper.classList.add('pdf-content');
+        wrapper.innerHTML = `
+            <div class="pdf-header">Recipe Plan</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Day-Time</th>
+                        <th>Recipe Name</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${clone.innerHTML}
+                </tbody>
+            </table>
+        `;
+        
+        // Generate PDF from the styled wrapper
+        html2pdf().from(wrapper).set(opt).save();
+    }
+</script>
+{% endblock %}
